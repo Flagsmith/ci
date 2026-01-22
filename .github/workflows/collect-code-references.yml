@@ -1,0 +1,68 @@
+name: Collect code references
+permissions:
+  contents: read  # For scanning of the code in the CI runner
+
+on:
+  workflow_call:
+
+    inputs:
+
+      flagsmith_project_id:
+        type: number
+        description: Flagsmith project ID
+        required: true
+
+      flagsmith_admin_api_url:
+        type: string
+        description: Flagsmith admin API URL
+        default: https://api.flagsmith.com
+
+      exclude_patterns:
+        type: string
+        description: Comma-separated list of patterns to exclude from scanning
+        default: node_modules,venv,.git,cache,build,htmlcov,docs,.json,tests
+
+    secrets:
+
+      flagsmith_admin_api_key:
+        description: Flagsmith admin API key
+        required: true
+
+env:
+  PYTHON_VERSION: '3.14'
+  FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
+  FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
+  FLAGSMITH_ADMIN_API_KEY: ${{ secrets.flagsmith_admin_api_key }}
+
+jobs:
+  collect-code-references:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Checkout Flagsmith scripts
+        uses: actions/checkout@v6
+        with:
+          repository: Flagsmith/ci
+          path: .flagsmith-ci
+          sparse-checkout: scripts/code-references
+
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          enable-cache: true
+
+      - name: Collect code references
+        id: collect
+        run: uv run .flagsmith-ci/scripts/code-references/collect.py
+        env:
+          EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}
+
+      - name: Upload code references
+        run: uv run .flagsmith-ci/scripts/code-references/upload.py
+        env:
+          CODE_REFERENCES: ${{ steps.collect.outputs.code_references }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          REVISION: ${{ github.sha }}
