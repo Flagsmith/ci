@@ -5,34 +5,51 @@
 
 import json
 import os
+from typing import Any
 
 import requests
 
-FLAGSMITH_ADMIN_API_URL = os.environ["FLAGSMITH_ADMIN_API_URL"]
-FLAGSMITH_ADMIN_API_KEY = os.environ["FLAGSMITH_ADMIN_API_KEY"]
-FLAGSMITH_PROJECT_ID = os.environ["FLAGSMITH_PROJECT_ID"]
-CODE_REFERENCES = os.environ["CODE_REFERENCES"]
-REPOSITORY_URL = os.environ["REPOSITORY_URL"]
-REVISION = os.environ["REVISION"]
 
-
-def main() -> None:
-    code_references = json.loads(CODE_REFERENCES)
+def upload_code_references(
+    code_references: list[dict[str, Any]],
+    *,
+    api_url: str,
+    api_key: str,
+    project_id: str,
+    repository_url: str,
+    revision: str,
+) -> int:
+    """Upload code references to Flagsmith API. Returns count of uploaded references."""
     if not code_references:
-        print("No code references to upload.")
-        return
+        return 0
 
     response = requests.post(
-        f"{FLAGSMITH_ADMIN_API_URL}/api/v1/projects/{FLAGSMITH_PROJECT_ID}/code-references/",
-        headers={"Authorization": f"Api-Key {FLAGSMITH_ADMIN_API_KEY}"},
+        f"{api_url}/api/v1/projects/{project_id}/code-references/",
+        headers={"Authorization": f"Api-Key {api_key}"},
         json={
-            "repository_url": REPOSITORY_URL,
-            "revision": REVISION,
+            "repository_url": repository_url,
+            "revision": revision,
             "code_references": code_references,
         },
     )
     response.raise_for_status()
-    print(f"Uploaded {len(code_references)} code references.")
+    return len(code_references)
+
+
+def main() -> None:
+    code_references = json.loads(os.environ["CODE_REFERENCES"])
+    count = upload_code_references(
+        code_references,
+        api_url=os.environ["FLAGSMITH_ADMIN_API_URL"],
+        api_key=os.environ["FLAGSMITH_ADMIN_API_KEY"],
+        project_id=os.environ["FLAGSMITH_PROJECT_ID"],
+        repository_url=os.environ["REPOSITORY_URL"],
+        revision=os.environ["REVISION"],
+    )
+    if count:
+        print(f"Uploaded {count} code references.")
+    else:
+        print("No code references to upload.")
 
 
 if __name__ == "__main__":

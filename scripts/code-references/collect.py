@@ -23,12 +23,6 @@ class CodeReference:
     line_number: int
 
 
-EXCLUDE_PATTERNS = os.environ.get("EXCLUDE_PATTERNS", "").replace(" ", "").split(",")
-FLAGSMITH_ADMIN_API_URL = os.environ["FLAGSMITH_ADMIN_API_URL"]
-FLAGSMITH_ADMIN_API_KEY = os.environ["FLAGSMITH_ADMIN_API_KEY"]
-FLAGSMITH_PROJECT_ID = os.environ["FLAGSMITH_PROJECT_ID"]
-
-
 def should_skip_file(file_path: Path) -> bool:
     """Whether to skip a file based on its size or content"""
     file_size = file_path.stat().st_size
@@ -49,11 +43,13 @@ def should_skip_file(file_path: Path) -> bool:
 
 def find_references(
     feature_names: list[FeatureName],
+    exclude_patterns: list[str] | None = None,
 ) -> Generator[CodeReference]:
     """Search for references to a feature name in the codebase."""
+    exclude_patterns = exclude_patterns or []
     all_files = Path(".").glob("**/*")
     for path in all_files:
-        if any(pattern in str(path).lower() for pattern in EXCLUDE_PATTERNS):
+        if any(pattern in str(path).lower() for pattern in exclude_patterns):
             continue
         if not path.is_file():
             continue
@@ -76,22 +72,38 @@ def find_references(
                     # e.g. feature names defined as constants
 
 
-def retrieve_feature_names() -> list[FeatureName]:
+def retrieve_feature_names(
+    *,
+    api_url: str,
+    api_key: str,
+    project_id: str,
+) -> list[FeatureName]:
     """Fetch feature names from the Flagsmith API."""
     response = requests.get(  # TODO: Make better use of pagination
-        f"{FLAGSMITH_ADMIN_API_URL}/api/v1/projects/{FLAGSMITH_PROJECT_ID}/features/?page_size=1000",
-        headers={"Authorization": f"Api-Key {FLAGSMITH_ADMIN_API_KEY}"},
+        f"{api_url}/api/v1/projects/{project_id}/features/?page_size=1000",
+        headers={"Authorization": f"Api-Key {api_key}"},
     )
     response.raise_for_status()
     return [feature["name"] for feature in response.json()["results"]]
 
 
 def main() -> None:
+    api_url = os.environ["FLAGSMITH_ADMIN_API_URL"]
+    api_key = os.environ["FLAGSMITH_ADMIN_API_KEY"]
+    project_id = os.environ["FLAGSMITH_PROJECT_ID"]
+    exclude_patterns = (
+        os.environ.get("EXCLUDE_PATTERNS", "").replace(" ", "").split(",")
+    )
+
     # Fetch visible features
-    feature_names = retrieve_feature_names()
+    feature_names = retrieve_feature_names(
+        api_url=api_url,
+        api_key=api_key,
+        project_id=project_id,
+    )
 
     # Find code references
-    code_references = list(find_references(feature_names))
+    code_references = list(find_references(feature_names, exclude_patterns))
 
     # Output to GHA
     json_references = json.dumps([asdict(ref) for ref in code_references])
