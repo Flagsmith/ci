@@ -19,6 +19,7 @@ upload-code-references = "code_references.upload:main"
 dev = [
     "pre-commit~=4.5.1",  # Git hooks for code quality checks
     "pytest~=9.0.2",  # Test framework
+    "pytest-cov~=6.0.0",  # Test coverage plugin for pytest
     "pytest-mock~=3.15.1",  # Mocking utilities for pytest
 ]
 
@@ -45,3 +46,13 @@ select = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+exclude_also = [
+    'if TYPE_CHECKING:',
+    'if typing.TYPE_CHECKING:',
+    '@(abc\.)?abstractmethod',
+]

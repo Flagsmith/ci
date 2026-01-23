@@ -30,9 +30,12 @@ jobs:
             test
             chore
 
-  lint:
-    name: Lint code
+  qa:
+    name: Check software quality
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for Codecov OIDC authentication
+      contents: read  # Required for actions/checkout
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -45,3 +48,13 @@ jobs:
 
       - name: Run linters
         run: make lint
+
+      - name: Run tests
+        env:
+          PYTEST_ADDOPTS: --cov --cov-report xml
+        run: make test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          use_oidc: true
