@@ -45,6 +45,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           repository: Flagsmith/ci
+          ref: feat/github-code-references-reusable-workflow
           path: .flagsmith-ci
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
