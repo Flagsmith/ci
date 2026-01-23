@@ -46,7 +46,7 @@ def find_references(
     exclude_patterns: list[str] | None = None,
 ) -> Generator[CodeReference]:
     """Search for references to a feature name in the codebase."""
-    exclude_patterns = exclude_patterns or []
+    exclude_patterns = [p for p in (exclude_patterns or []) if p]
     all_files = Path(".").glob("**/*")
     for path in all_files:
         if any(pattern in str(path).lower() for pattern in exclude_patterns):

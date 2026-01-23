@@ -164,6 +164,31 @@ def test_find_references__excluded_path__skips_file(
     assert results == []
 
 
+@pytest.mark.parametrize(
+    "exclude_patterns",
+    [
+        pytest.param([], id="empty_list"),
+        pytest.param([""], id="list_with_empty_string"),
+    ],
+)
+def test_find_references__empty_exclude_patterns__finds_references(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    exclude_patterns: list[str],
+) -> None:
+    # Given
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "app.py").write_text('get_feature("my_flag")')
+
+    # When
+    results = list(find_references(["my_flag"], exclude_patterns=exclude_patterns))
+
+    # Then
+    assert results == [
+        CodeReference(feature_name="my_flag", file_path="app.py", line_number=1),
+    ]
+
+
 def test_find_references__multiple_flags__yields_all(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
