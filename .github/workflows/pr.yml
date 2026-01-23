@@ -34,7 +34,6 @@ jobs:
     name: Check software quality
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for Codecov OIDC authentication
       contents: read  # Required for actions/checkout
     steps:
       - name: Checkout code
@@ -57,4 +56,4 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
-          use_oidc: true
+          token: ${{ secrets.CODECOV_TOKEN }}
