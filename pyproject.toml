@@ -1,11 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "flagsmith-ci"
 version = "0.0.0"
 description = "Continuous Integration tooling to integrate with Flagsmith."
 requires-python = ">=3.14"
+dependencies = [
+    "requests~=2.32.5",  # HTTP client for Flagsmith API calls
+]
+
+[project.scripts]
+collect-code-references = "code_references.collect:main"
+upload-code-references = "code_references.upload:main"
 
 [dependency-groups]
-dev = ["pre-commit", "pytest", "pytest-mock", "requests"]
+dev = [
+    "pre-commit~=4.5.1",  # Git hooks for code quality checks
+    "pytest~=9.0.2",  # Test framework
+    "pytest-mock~=3.15.1",  # Mocking utilities for pytest
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/code_references"]
 
 [tool.ruff]
 line-length = 88
@@ -27,15 +45,3 @@ select = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-
-# Standalone scripts declare dependencies via PEP 723 inline metadata
-[[tool.ty.overrides]]
-include = ["scripts/**"]
-[tool.ty.overrides.rules]
-unresolved-import = "ignore"
-
-# Tests import scripts via sys.path manipulation in conftest.py
-[[tool.ty.overrides]]
-include = ["tests/**"]
-[tool.ty.overrides.rules]
-unresolved-import = "ignore"

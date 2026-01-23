@@ -3,13 +3,14 @@ from textwrap import dedent
 from unittest.mock import Mock
 
 import pytest
-from collect import (
+from pytest_mock import MockerFixture
+
+from code_references.collect import (
     CodeReference,
     find_references,
     retrieve_feature_names,
     should_skip_file,
 )
-from pytest_mock import MockerFixture
 
 
 def test_retrieve_feature_names__returns_names_from_api(
@@ -20,7 +21,10 @@ def test_retrieve_feature_names__returns_names_from_api(
     mock_response.json.return_value = {
         "results": [{"name": "flag_a"}, {"name": "flag_b"}],
     }
-    mock_get = mocker.patch("collect.requests.get", return_value=mock_response)
+    mock_get = mocker.patch(
+        "code_references.collect.requests.get",
+        return_value=mock_response,
+    )
 
     # When
     result = retrieve_feature_names(

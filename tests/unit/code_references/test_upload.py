@@ -3,14 +3,15 @@ from unittest.mock import Mock
 import pytest
 from pytest_mock import MockerFixture
 from requests import HTTPError
-from upload import upload_code_references
+
+from code_references.upload import upload_code_references
 
 
 def test_upload_code_references__empty_list__skips_api_call(
     mocker: MockerFixture,
 ) -> None:
     # Given
-    mock_post = mocker.patch("upload.requests.post")
+    mock_post = mocker.patch("code_references.upload.requests.post")
 
     # When
     result = upload_code_references(
@@ -32,7 +33,10 @@ def test_upload_code_references__posts_references_to_api(
 ) -> None:
     # Given
     mock_response = Mock()
-    mock_post = mocker.patch("upload.requests.post", return_value=mock_response)
+    mock_post = mocker.patch(
+        "code_references.upload.requests.post",
+        return_value=mock_response,
+    )
     references = [
         {"feature_name": "flag_a", "file_path": "app.py", "line_number": 10},
     ]
@@ -64,7 +68,10 @@ def test_upload_code_references__api_error__raises(mocker: MockerFixture) -> Non
     # Given
     mock_response = Mock()
     mock_response.raise_for_status.side_effect = HTTPError("401")
-    mocker.patch("upload.requests.post", return_value=mock_response)
+    mocker.patch(
+        "code_references.upload.requests.post",
+        return_value=mock_response,
+    )
 
     # When / Then
     with pytest.raises(HTTPError):

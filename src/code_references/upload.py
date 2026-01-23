@@ -1,6 +1,3 @@
-# /// script
-# dependencies = ["requests"]
-# ///
 """Upload code references to Flagsmith."""
 
 import json
@@ -37,6 +34,7 @@ def upload_code_references(
 
 
 def main() -> None:
+    """CLI entry point for uploading code references."""
     code_references = json.loads(os.environ["CODE_REFERENCES"])
     count = upload_code_references(
         code_references,

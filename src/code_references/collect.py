@@ -1,6 +1,3 @@
-# /// script
-# dependencies = ["requests"]
-# ///
 """Collect code references for Flagsmith feature flags."""
 
 import json
@@ -24,7 +21,7 @@ class CodeReference:
 
 
 def should_skip_file(file_path: Path) -> bool:
-    """Whether to skip a file based on its size or content"""
+    """Whether to skip a file based on its size or content."""
     file_size = file_path.stat().st_size
     if file_size == 0:  # Empty files are irrelevant
         return True
@@ -88,6 +85,7 @@ def retrieve_feature_names(
 
 
 def main() -> None:
+    """CLI entry point for collecting code references."""
     api_url = os.environ["FLAGSMITH_ADMIN_API_URL"]
     api_key = os.environ["FLAGSMITH_ADMIN_API_KEY"]
     project_id = os.environ["FLAGSMITH_PROJECT_ID"]

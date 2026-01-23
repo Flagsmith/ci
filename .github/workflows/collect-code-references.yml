@@ -41,12 +41,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Checkout Flagsmith scripts
+      - name: Checkout Flagsmith CI
         uses: actions/checkout@v6
         with:
           repository: Flagsmith/ci
           path: .flagsmith-ci
-          sparse-checkout: scripts/code-references
 
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: astral-sh/setup-uv@v7
@@ -56,12 +55,12 @@ jobs:
 
       - name: Collect code references
         id: collect
-        run: uv run .flagsmith-ci/scripts/code-references/collect.py
+        run: uv run --with .flagsmith-ci collect-code-references
         env:
           EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}
 
       - name: Upload code references
-        run: uv run .flagsmith-ci/scripts/code-references/upload.py
+        run: uv run --with .flagsmith-ci upload-code-references
         env:
           CODE_REFERENCES: ${{ steps.collect.outputs.code_references }}
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
