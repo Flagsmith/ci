@@ -55,4 +55,5 @@ exclude_also = [
     'if TYPE_CHECKING:',
     'if typing.TYPE_CHECKING:',
     '@(abc\.)?abstractmethod',
+    'if __name__ == "__main__":',
 ]

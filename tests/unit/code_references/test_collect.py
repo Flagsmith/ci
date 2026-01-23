@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from code_references.collect import (
     CodeReference,
     find_references,
+    main,
     retrieve_feature_names,
     should_skip_file,
 )
@@ -168,6 +169,24 @@ def test_find_references__excluded_path__skips_file(
     assert results == []
 
 
+def test_find_references__directory__skips(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Given
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "subdir").mkdir()
+    (tmp_path / "app.py").write_text('get_feature("my_flag")')
+
+    # When
+    results = list(find_references(["my_flag"]))
+
+    # Then
+    assert results == [
+        CodeReference(feature_name="my_flag", file_path="app.py", line_number=1),
+    ]
+
+
 @pytest.mark.parametrize(
     "exclude_patterns",
     [
@@ -214,3 +233,63 @@ def test_find_references__multiple_flags__yields_all(
         CodeReference(feature_name="flag_a", file_path="app.py", line_number=1),
         CodeReference(feature_name="flag_b", file_path="app.py", line_number=2),
     }
+
+
+def test_main__with_references__prints_and_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Given
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "app.py").write_text('get_feature("my_flag")')
+    github_output = tmp_path / "github_output"
+    github_output.touch()
+
+    monkeypatch.setenv("FLAGSMITH_ADMIN_API_URL", "https://api.flagsmith.com")
+    monkeypatch.setenv("FLAGSMITH_ADMIN_API_KEY", "ser.test_key")
+    monkeypatch.setenv("FLAGSMITH_PROJECT_ID", "123")
+    monkeypatch.setenv("EXCLUDE_PATTERNS", "")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
+
+    mock_response = Mock()
+    mock_response.json.return_value = {"results": [{"name": "my_flag"}]}
+    mocker.patch("code_references.collect.requests.get", return_value=mock_response)
+
+    # When
+    main()
+
+    # Then
+    captured = capsys.readouterr()
+    assert "Feature: my_flag" in captured.out
+    assert "app.py:1" in captured.out
+    assert "code_references=" in github_output.read_text()
+
+
+def test_main__no_references__prints_message(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Given
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "app.py").write_text("# no flags here")
+
+    monkeypatch.setenv("FLAGSMITH_ADMIN_API_URL", "https://api.flagsmith.com")
+    monkeypatch.setenv("FLAGSMITH_ADMIN_API_KEY", "ser.test_key")
+    monkeypatch.setenv("FLAGSMITH_PROJECT_ID", "123")
+    monkeypatch.setenv("EXCLUDE_PATTERNS", "")
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
+    mock_response = Mock()
+    mock_response.json.return_value = {"results": [{"name": "my_flag"}]}
+    mocker.patch("code_references.collect.requests.get", return_value=mock_response)
+
+    # When
+    main()
+
+    # Then
+    captured = capsys.readouterr()
+    assert "No code references found." in captured.out
