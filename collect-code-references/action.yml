@@ -1,0 +1,43 @@
+name: Collect code references
+description: Scan codebase for Flagsmith feature flag references
+author: Flagsmith
+
+inputs:
+  flagsmith_project_id:
+    description: Flagsmith project ID
+    required: true
+  flagsmith_admin_api_url:
+    description: Flagsmith admin API URL
+    required: false
+    default: https://api.flagsmith.com
+  flagsmith_admin_api_key:
+    description: Flagsmith admin API key
+    required: true
+  exclude_patterns:
+    description: Comma-separated list of patterns to exclude from scanning
+    required: false
+    default: .git,node_modules,vendor,venv,.venv,__pycache__,.tox,.mypy_cache,.pytest_cache,.ruff_cache,dist,build,target,out,bin,obj,.next,.nuxt,.cache,coverage,htmlcov,.nyc_output
+
+outputs:
+  code_references:
+    description: JSON array of code references found
+    value: ${{ steps.collect.outputs.code_references }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: '3.14'
+        enable-cache: true
+
+    - name: Collect code references
+      id: collect
+      shell: bash
+      run: uv run --with ${{ github.action_path }}/.. collect-code-references
+      env:
+        FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
+        FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
+        FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
+        EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}

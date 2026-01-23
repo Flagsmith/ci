@@ -1,0 +1,44 @@
+name: Upload code references
+description: Upload collected code references to Flagsmith
+author: Flagsmith
+
+inputs:
+  code_references:
+    description: JSON array of code references to upload
+    required: true
+  flagsmith_project_id:
+    description: Flagsmith project ID
+    required: true
+  flagsmith_admin_api_url:
+    description: Flagsmith admin API URL
+    required: false
+    default: https://api.flagsmith.com
+  flagsmith_admin_api_key:
+    description: Flagsmith admin API key
+    required: true
+  repository_url:
+    description: URL of the repository being scanned
+    required: true
+  revision:
+    description: Git revision (commit SHA) being scanned
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: '3.14'
+        enable-cache: true
+
+    - name: Upload code references
+      shell: bash
+      run: uv run --with ${{ github.action_path }}/.. upload-code-references
+      env:
+        CODE_REFERENCES: ${{ inputs.code_references }}
+        FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
+        FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
+        FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
+        REPOSITORY_URL: ${{ inputs.repository_url }}
+        REVISION: ${{ inputs.revision }}

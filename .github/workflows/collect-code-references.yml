@@ -20,7 +20,7 @@ on:
       exclude_patterns:
         type: string
         description: Comma-separated list of patterns to exclude from scanning
-        default: node_modules,venv,.git,cache,build,htmlcov,docs,.json,tests
+        default: ''
 
     secrets:
 
@@ -28,41 +28,28 @@ on:
         description: Flagsmith admin API key
         required: true
 
-env:
-  PYTHON_VERSION: '3.14'
-  FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
-  FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
-  FLAGSMITH_ADMIN_API_KEY: ${{ secrets.flagsmith_admin_api_key }}
-
 jobs:
-  collect-code-references:
+  run:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Checkout Flagsmith CI
-        uses: actions/checkout@v6
-        with:
-          repository: Flagsmith/ci
-          ref: feat/github-code-references-reusable-workflow
-          path: .flagsmith-ci
-
-      - name: Set up Python ${{ env.PYTHON_VERSION }}
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          enable-cache: true
-
       - name: Collect code references
         id: collect
-        run: uv run --with .flagsmith-ci collect-code-references
-        env:
-          EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}
+        uses: Flagsmith/ci/collect-code-references@feat/github-code-references-reusable-workflow
+        with:
+          flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
+          flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
+          flagsmith_admin_api_key: ${{ secrets.flagsmith_admin_api_key }}
+          exclude_patterns: ${{ inputs.exclude_patterns }}
 
       - name: Upload code references
-        run: uv run --with .flagsmith-ci upload-code-references
-        env:
-          CODE_REFERENCES: ${{ steps.collect.outputs.code_references }}
-          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-          REVISION: ${{ github.sha }}
+        uses: Flagsmith/ci/upload-code-references@feat/github-code-references-reusable-workflow
+        with:
+          code_references: ${{ steps.collect.outputs.code_references }}
+          flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
+          flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
+          flagsmith_admin_api_key: ${{ secrets.flagsmith_admin_api_key }}
+          repository_url: ${{ github.server_url }}/${{ github.repository }}
+          revision: ${{ github.sha }}
