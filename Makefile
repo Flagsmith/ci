@@ -13,6 +13,10 @@ install: install-packages install-pre-commit ## Ensure the environment is set up
 lint: ## Run linters
 	uv run --all-extras pre-commit run --all-files
 
+.PHONY: test
+test: ## Run tests
+	uv run pytest $(opts)
+
 help:
 	@echo "Usage: make [target]"
 	@echo ""

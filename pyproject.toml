@@ -5,7 +5,7 @@ description = "Continuous Integration tooling to integrate with Flagsmith."
 requires-python = ">=3.14"
 
 [dependency-groups]
-dev = ["pre-commit"]
+dev = ["pre-commit", "pytest", "pytest-mock", "requests"]
 
 [tool.ruff]
 line-length = 88
@@ -25,8 +25,17 @@ select = [
     "RUF",    # Ruff-specific rules
 ]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
 # Standalone scripts declare dependencies via PEP 723 inline metadata
 [[tool.ty.overrides]]
 include = ["scripts/**"]
+[tool.ty.overrides.rules]
+unresolved-import = "ignore"
+
+# Tests import scripts via sys.path manipulation in conftest.py
+[[tool.ty.overrides]]
+include = ["tests/**"]
 [tool.ty.overrides.rules]
 unresolved-import = "ignore"
