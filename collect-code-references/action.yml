@@ -3,15 +3,8 @@ description: Scan codebase for Flagsmith feature flag references
 author: Flagsmith
 
 inputs:
-  flagsmith_project_id:
-    description: Flagsmith project ID
-    required: true
-  flagsmith_admin_api_url:
-    description: Flagsmith admin API URL
-    required: false
-    default: https://api.flagsmith.com
-  flagsmith_admin_api_key:
-    description: Flagsmith admin API key
+  feature_names:
+    description: JSON array of feature names to search for
     required: true
   exclude_patterns:
     description: Comma-separated list of patterns to exclude from scanning
@@ -35,9 +28,9 @@ runs:
     - name: Collect code references
       id: collect
       shell: bash
-      run: uv run --with ${{ github.action_path }}/.. collect-code-references
       env:
-        FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
-        FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
-        FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
+        FEATURE_NAMES: ${{ inputs.feature_names }}
         EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}
+        SCAN_PATH: ${{ github.workspace }}
+      working-directory: ${{ github.action_path }}/..
+      run: uv run collect-code-references

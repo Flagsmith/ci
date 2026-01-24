@@ -1,6 +1,6 @@
 name: Collect code references
 permissions:
-  contents: read  # For scanning of the code in the CI runner
+  contents: read  # Required for actions/checkout to clone the repository
 
 on:
   workflow_call:
@@ -29,8 +29,26 @@ on:
         required: true
 
 jobs:
-  run:
+  fetch:
+    name: Fetch feature names
     runs-on: ubuntu-latest
+    outputs:
+      feature_names: ${{ steps.fetch.outputs.feature_names }}
+    steps:
+      - name: Fetch feature names
+        id: fetch
+        uses: Flagsmith/ci/fetch-feature-names@feat/github-code-references-reusable-workflow
+        with:
+          flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
+          flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
+          flagsmith_admin_api_key: ${{ secrets.flagsmith_admin_api_key }}
+
+  scan:
+    name: Scan codebase
+    runs-on: ubuntu-latest
+    needs: fetch
+    outputs:
+      code_references: ${{ steps.collect.outputs.code_references }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -39,15 +57,18 @@ jobs:
         id: collect
         uses: Flagsmith/ci/collect-code-references@feat/github-code-references-reusable-workflow
         with:
-          flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
-          flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
-          flagsmith_admin_api_key: ${{ secrets.flagsmith_admin_api_key }}
+          feature_names: ${{ needs.fetch.outputs.feature_names }}
           exclude_patterns: ${{ inputs.exclude_patterns }}
 
+  upload:
+    name: Upload results
+    runs-on: ubuntu-latest
+    needs: scan
+    steps:
       - name: Upload code references
         uses: Flagsmith/ci/upload-code-references@feat/github-code-references-reusable-workflow
         with:
-          code_references: ${{ steps.collect.outputs.code_references }}
+          code_references: ${{ needs.scan.outputs.code_references }}
           flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
           flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
           flagsmith_admin_api_key: ${{ secrets.flagsmith_admin_api_key }}

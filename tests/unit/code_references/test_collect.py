@@ -1,45 +1,14 @@
 from pathlib import Path
 from textwrap import dedent
-from unittest.mock import Mock
 
 import pytest
-from pytest_mock import MockerFixture
 
 from code_references.collect import (
     CodeReference,
     find_references,
     main,
-    retrieve_feature_names,
     should_skip_file,
 )
-
-
-def test_retrieve_feature_names__returns_names_from_api(
-    mocker: MockerFixture,
-) -> None:
-    # Given
-    mock_response = Mock()
-    mock_response.json.return_value = {
-        "results": [{"name": "flag_a"}, {"name": "flag_b"}],
-    }
-    mock_get = mocker.patch(
-        "code_references.collect.requests.get",
-        return_value=mock_response,
-    )
-
-    # When
-    result = retrieve_feature_names(
-        api_url="https://api.flagsmith.com",
-        api_key="ser.test_key",
-        project_id="123",
-    )
-
-    # Then
-    assert result == ["flag_a", "flag_b"]
-    mock_get.assert_called_once_with(
-        "https://api.flagsmith.com/api/v1/projects/123/features/?page_size=1000",
-        headers={"Authorization": "Api-Key ser.test_key"},
-    )
 
 
 @pytest.mark.parametrize(
@@ -235,10 +204,26 @@ def test_find_references__multiple_flags__yields_all(
     }
 
 
+def test_find_references__with_scan_path__scans_specified_directory(
+    tmp_path: Path,
+) -> None:
+    # Given
+    scan_dir = tmp_path / "target"
+    scan_dir.mkdir()
+    (scan_dir / "app.py").write_text('get_feature("my_flag")')
+
+    # When
+    results = list(find_references(["my_flag"], scan_path=scan_dir))
+
+    # Then
+    assert len(results) == 1
+    assert results[0].feature_name == "my_flag"
+    assert results[0].line_number == 1
+
+
 def test_main__with_references__prints_and_outputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    mocker: MockerFixture,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Given
@@ -247,15 +232,9 @@ def test_main__with_references__prints_and_outputs(
     github_output = tmp_path / "github_output"
     github_output.touch()
 
-    monkeypatch.setenv("FLAGSMITH_ADMIN_API_URL", "https://api.flagsmith.com")
-    monkeypatch.setenv("FLAGSMITH_ADMIN_API_KEY", "ser.test_key")
-    monkeypatch.setenv("FLAGSMITH_PROJECT_ID", "123")
+    monkeypatch.setenv("FEATURE_NAMES", '["my_flag"]')
     monkeypatch.setenv("EXCLUDE_PATTERNS", "")
     monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
-
-    mock_response = Mock()
-    mock_response.json.return_value = {"results": [{"name": "my_flag"}]}
-    mocker.patch("code_references.collect.requests.get", return_value=mock_response)
 
     # When
     main()
@@ -270,22 +249,15 @@ def test_main__with_references__prints_and_outputs(
 def test_main__no_references__prints_message(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    mocker: MockerFixture,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Given
     monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text("# no flags here")
 
-    monkeypatch.setenv("FLAGSMITH_ADMIN_API_URL", "https://api.flagsmith.com")
-    monkeypatch.setenv("FLAGSMITH_ADMIN_API_KEY", "ser.test_key")
-    monkeypatch.setenv("FLAGSMITH_PROJECT_ID", "123")
+    monkeypatch.setenv("FEATURE_NAMES", '["my_flag"]')
     monkeypatch.setenv("EXCLUDE_PATTERNS", "")
     monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-
-    mock_response = Mock()
-    mock_response.json.return_value = {"results": [{"name": "my_flag"}]}
-    mocker.patch("code_references.collect.requests.get", return_value=mock_response)
 
     # When
     main()
@@ -293,3 +265,26 @@ def test_main__no_references__prints_message(
     # Then
     captured = capsys.readouterr()
     assert "No code references found." in captured.out
+
+
+def test_main__with_scan_path__scans_specified_directory(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Given
+    scan_dir = tmp_path / "target"
+    scan_dir.mkdir()
+    (scan_dir / "app.py").write_text('get_feature("my_flag")')
+
+    monkeypatch.setenv("FEATURE_NAMES", '["my_flag"]')
+    monkeypatch.setenv("EXCLUDE_PATTERNS", "")
+    monkeypatch.setenv("SCAN_PATH", str(scan_dir))
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
+    # When
+    main()
+
+    # Then
+    captured = capsys.readouterr()
+    assert "Feature: my_flag" in captured.out

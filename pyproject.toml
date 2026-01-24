@@ -12,6 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
+fetch-feature-names = "code_references.fetch:main"
 collect-code-references = "code_references.collect:main"
 upload-code-references = "code_references.upload:main"
 
