@@ -63,7 +63,12 @@ def find_references(
                         re.escape(feature_name)
                     })\1"""
                     if re.search(pattern, "".join(context)):
-                        yield CodeReference(feature_name, str(path), line_number)
+                        relative_path = path.relative_to(base_path)
+                        yield CodeReference(
+                            feature_name,
+                            str(relative_path),
+                            line_number,
+                        )
 
 
 def main() -> None:
