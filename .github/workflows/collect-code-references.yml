@@ -37,7 +37,7 @@ jobs:
     steps:
       - name: Fetch feature names
         id: fetch
-        uses: Flagsmith/ci/fetch-feature-names@v1.0.0
+        uses: Flagsmith/ci/fetch-feature-names@feat/github-code-references-reusable-workflow
         with:
           flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
           flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
@@ -55,7 +55,7 @@ jobs:
 
       - name: Collect code references
         id: collect
-        uses: Flagsmith/ci/collect-code-references@v1.0.0
+        uses: Flagsmith/ci/collect-code-references@feat/github-code-references-reusable-workflow
         with:
           feature_names: ${{ needs.fetch.outputs.feature_names }}
           exclude_patterns: ${{ inputs.exclude_patterns }}
@@ -66,7 +66,7 @@ jobs:
     needs: scan
     steps:
       - name: Upload code references
-        uses: Flagsmith/ci/upload-code-references@v1.0.0
+        uses: Flagsmith/ci/upload-code-references@feat/github-code-references-reusable-workflow
         with:
           code_references: ${{ needs.scan.outputs.code_references }}
           flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
