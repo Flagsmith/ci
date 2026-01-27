@@ -30,7 +30,7 @@ jobs:
     steps:
       - name: Fetch feature names
         id: fetch-feature-names
-        uses: Flagsmith/ci/.github/actions/fetch-feature-names@feat/github-code-references-reusable-workflow
+        uses: Flagsmith/ci/.github/actions/fetch-feature-names@v1.0.0
         with:
           flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
           flagsmith_admin_api_url: ${{ inputs.flagsmith_admin_api_url }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Scan code references
         id: scan-code-references
-        uses: Flagsmith/ci/.github/actions/scan-code-references@feat/github-code-references-reusable-workflow
+        uses: Flagsmith/ci/.github/actions/scan-code-references@v1.0.0
         with:
           feature_names: ${{ needs.fetch-feature-names.outputs.feature_names }}
 
@@ -60,7 +60,7 @@ jobs:
     needs: scan-code-references
     steps:
       - name: Upload code references
-        uses: Flagsmith/ci/.github/actions/upload-code-references@feat/github-code-references-reusable-workflow
+        uses: Flagsmith/ci/.github/actions/upload-code-references@v1.0.0
         with:
           code_references: ${{ needs.scan-code-references.outputs.code_references }}
           flagsmith_project_id: ${{ inputs.flagsmith_project_id }}
