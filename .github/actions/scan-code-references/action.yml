@@ -1,4 +1,4 @@
-name: Collect code references
+name: Scan code references
 description: Scan codebase for Flagsmith feature flag references
 author: Flagsmith
 
@@ -14,7 +14,7 @@ inputs:
 outputs:
   code_references:
     description: JSON array of code references found
-    value: ${{ steps.collect.outputs.code_references }}
+    value: ${{ steps.scan.outputs.code_references }}
 
 runs:
   using: composite
@@ -25,12 +25,12 @@ runs:
         python-version: '3.14'
         enable-cache: true
 
-    - name: Collect code references
-      id: collect
+    - name: Scan code references
+      id: scan
       shell: bash
       env:
         FEATURE_NAMES: ${{ inputs.feature_names }}
         EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}
         SCAN_PATH: ${{ github.workspace }}
-      working-directory: ${{ github.action_path }}/..
-      run: uv run collect-code-references
+      working-directory: ${{ github.action_path }}/../../..
+      run: uv run scan-code-references

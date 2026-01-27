@@ -3,9 +3,9 @@ from textwrap import dedent
 
 import pytest
 
-from code_references.collect import (
-    find_references,
+from code_references.cli.scan_code_references import (
     main,
+    scan_code_references,
     should_skip_file,
 )
 
@@ -56,7 +56,7 @@ def test_should_skip_file__text_file__returns_false(tmp_path: Path) -> None:
         pytest.param('check_flag("my_flag")', id="check_flag"),
     ],
 )
-def test_find_references__flag_referenced__yields_code_reference(
+def test_scan_code_references__flag_referenced__yields_code_reference(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     source_code: str,
@@ -66,7 +66,7 @@ def test_find_references__flag_referenced__yields_code_reference(
     (tmp_path / "app.py").write_text(source_code)
 
     # When
-    results = list(find_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"]))
 
     # Then
     assert results == [
@@ -74,7 +74,7 @@ def test_find_references__flag_referenced__yields_code_reference(
     ]
 
 
-def test_find_references__multiline_reference__yields_code_reference(
+def test_scan_code_references__multiline_reference__yields_code_reference(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -89,7 +89,7 @@ def test_find_references__multiline_reference__yields_code_reference(
     )
 
     # When
-    results = list(find_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"]))
 
     # Then
     assert results == [
@@ -105,7 +105,7 @@ def test_find_references__multiline_reference__yields_code_reference(
         pytest.param("my_flag = True", id="variable_name"),
     ],
 )
-def test_find_references__flag_not_referenced__yields_nothing(
+def test_scan_code_references__flag_not_referenced__yields_nothing(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     source_code: str,
@@ -115,13 +115,13 @@ def test_find_references__flag_not_referenced__yields_nothing(
     (tmp_path / "app.py").write_text(source_code)
 
     # When
-    results = list(find_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"]))
 
     # Then
     assert results == []
 
 
-def test_find_references__excluded_path__skips_file(
+def test_scan_code_references__excluded_path__skips_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -131,13 +131,13 @@ def test_find_references__excluded_path__skips_file(
     (tmp_path / "venv" / "app.py").write_text('get_feature("my_flag")')
 
     # When
-    results = list(find_references(["my_flag"], exclude_patterns=["venv"]))
+    results = list(scan_code_references(["my_flag"], exclude_patterns=["venv"]))
 
     # Then
     assert results == []
 
 
-def test_find_references__directory__skips(
+def test_scan_code_references__directory__skips(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -147,7 +147,7 @@ def test_find_references__directory__skips(
     (tmp_path / "app.py").write_text('get_feature("my_flag")')
 
     # When
-    results = list(find_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"]))
 
     # Then
     assert results == [
@@ -162,7 +162,7 @@ def test_find_references__directory__skips(
         pytest.param([""], id="list_with_empty_string"),
     ],
 )
-def test_find_references__empty_exclude_patterns__finds_references(
+def test_scan_code_references__empty_exclude_patterns__finds_references(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     exclude_patterns: list[str],
@@ -172,7 +172,7 @@ def test_find_references__empty_exclude_patterns__finds_references(
     (tmp_path / "app.py").write_text('get_feature("my_flag")')
 
     # When
-    results = list(find_references(["my_flag"], exclude_patterns=exclude_patterns))
+    results = list(scan_code_references(["my_flag"], exclude_patterns=exclude_patterns))
 
     # Then
     assert results == [
@@ -180,7 +180,7 @@ def test_find_references__empty_exclude_patterns__finds_references(
     ]
 
 
-def test_find_references__multiple_flags__yields_all(
+def test_scan_code_references__multiple_flags__yields_all(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -194,7 +194,7 @@ def test_find_references__multiple_flags__yields_all(
     )
 
     # When
-    results = list(find_references(["flag_a", "flag_b"]))
+    results = list(scan_code_references(["flag_a", "flag_b"]))
 
     # Then
     assert sorted(results, key=lambda r: r["line_number"]) == [
@@ -203,7 +203,7 @@ def test_find_references__multiple_flags__yields_all(
     ]
 
 
-def test_find_references__with_scan_path__scans_specified_directory(
+def test_scan_code_references__with_scan_path__scans_specified_directory(
     tmp_path: Path,
 ) -> None:
     # Given
@@ -212,7 +212,7 @@ def test_find_references__with_scan_path__scans_specified_directory(
     (scan_dir / "app.py").write_text('get_feature("my_flag")')
 
     # When
-    results = list(find_references(["my_flag"], scan_path=scan_dir))
+    results = list(scan_code_references(["my_flag"], scan_path=scan_dir))
 
     # Then
     assert len(results) == 1

@@ -35,5 +35,5 @@ runs:
         FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
         FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
         FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
-      working-directory: ${{ github.action_path }}/..
+      working-directory: ${{ github.action_path }}/../../..
       run: uv run fetch-feature-names

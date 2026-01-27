@@ -4,15 +4,15 @@ import pytest
 from pytest_mock import MockerFixture
 from requests import HTTPError
 
+from code_references.cli.upload_code_references import main, upload_code_references
 from code_references.types import CodeReferenceSubmit
-from code_references.upload import main, upload_code_references
 
 
 def test_upload_code_references__empty_list__skips_api_call(
     mocker: MockerFixture,
 ) -> None:
     # Given
-    mock_post = mocker.patch("code_references.upload.requests.post")
+    mock_post = mocker.patch("code_references.cli.upload_code_references.requests.post")
 
     # When
     result = upload_code_references(
@@ -35,7 +35,7 @@ def test_upload_code_references__posts_references_to_api(
     # Given
     mock_response = Mock()
     mock_post = mocker.patch(
-        "code_references.upload.requests.post",
+        "code_references.cli.upload_code_references.requests.post",
         return_value=mock_response,
     )
     references: list[CodeReferenceSubmit] = [
@@ -70,7 +70,7 @@ def test_upload_code_references__api_error__raises(mocker: MockerFixture) -> Non
     mock_response = Mock()
     mock_response.raise_for_status.side_effect = HTTPError("401")
     mocker.patch(
-        "code_references.upload.requests.post",
+        "code_references.cli.upload_code_references.requests.post",
         return_value=mock_response,
     )
 
@@ -105,7 +105,10 @@ def test_main__with_references__uploads_and_prints(
     monkeypatch.setenv("REVISION", "abc123")
 
     mock_response = Mock()
-    mocker.patch("code_references.upload.requests.post", return_value=mock_response)
+    mocker.patch(
+        "code_references.cli.upload_code_references.requests.post",
+        return_value=mock_response,
+    )
 
     # When
     main()
@@ -128,7 +131,7 @@ def test_main__no_references__prints_message(
     monkeypatch.setenv("REPOSITORY_URL", "https://github.com/acme/repo")
     monkeypatch.setenv("REVISION", "abc123")
 
-    mock_post = mocker.patch("code_references.upload.requests.post")
+    mock_post = mocker.patch("code_references.cli.upload_code_references.requests.post")
 
     # When
     main()

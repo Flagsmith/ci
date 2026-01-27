@@ -1,5 +1,5 @@
 name: Upload code references
-description: Upload collected code references to Flagsmith
+description: Upload code references to Flagsmith
 author: Flagsmith
 
 inputs:
@@ -43,5 +43,5 @@ runs:
         FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
         REPOSITORY_URL: ${{ inputs.repository_url }}
         REVISION: ${{ inputs.revision }}
-      working-directory: ${{ github.action_path }}/..
+      working-directory: ${{ github.action_path }}/../../..
       run: uv run upload-code-references

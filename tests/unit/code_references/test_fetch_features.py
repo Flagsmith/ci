@@ -3,7 +3,7 @@ from unittest.mock import Mock
 
 from pytest_mock import MockerFixture
 
-from code_references.fetch import fetch_feature_names, main
+from code_references.cli.fetch_features import fetch_feature_names, main
 
 
 def test_fetch_feature_names__returns_names_from_api(
@@ -15,7 +15,7 @@ def test_fetch_feature_names__returns_names_from_api(
         "results": [{"name": "flag_a"}, {"name": "flag_b"}],
     }
     mock_get = mocker.patch(
-        "code_references.fetch.requests.get",
+        "code_references.cli.fetch_features.requests.get",
         return_value=mock_response,
     )
 
@@ -53,7 +53,10 @@ def test_main__outputs_feature_names(
     mock_response.json.return_value = {
         "results": [{"name": "flag_a"}, {"name": "flag_b"}],
     }
-    mocker.patch("code_references.fetch.requests.get", return_value=mock_response)
+    mocker.patch(
+        "code_references.cli.fetch_features.requests.get",
+        return_value=mock_response,
+    )
 
     # When
     main()

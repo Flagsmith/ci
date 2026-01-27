@@ -1,4 +1,4 @@
-"""Collect code references for Flagsmith feature flags."""
+"""Scan code references for Flagsmith feature flags."""
 
 import json
 import os
@@ -30,7 +30,7 @@ def should_skip_file(file_path: Path) -> bool:
     return False
 
 
-def find_references(
+def scan_code_references(
     feature_names: list[FeatureName],
     exclude_patterns: list[str] | None = None,
     scan_path: Path | None = None,
@@ -74,7 +74,9 @@ def main() -> None:
     scan_path_str = os.environ.get("SCAN_PATH")
     scan_path = Path(scan_path_str) if scan_path_str else None
 
-    code_references = list(find_references(feature_names, exclude_patterns, scan_path))
+    code_references = list(
+        scan_code_references(feature_names, exclude_patterns, scan_path),
+    )
 
     json_references = json.dumps(code_references)
     github_output = os.environ.get("GITHUB_OUTPUT")

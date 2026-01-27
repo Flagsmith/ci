@@ -12,9 +12,9 @@ dependencies = [
 ]
 
 [project.scripts]
-fetch-feature-names = "code_references.fetch:main"
-collect-code-references = "code_references.collect:main"
-upload-code-references = "code_references.upload:main"
+fetch-feature-names = "code_references.cli.fetch_features:main"
+scan-code-references = "code_references.cli.scan_code_references:main"
+upload-code-references = "code_references.cli.upload_code_references:main"
 
 [dependency-groups]
 dev = [
