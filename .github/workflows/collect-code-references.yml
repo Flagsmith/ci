@@ -15,11 +15,6 @@ on:
         description: Flagsmith admin API URL
         default: https://api.flagsmith.com
 
-      exclude_patterns:
-        type: string
-        description: Comma-separated list of patterns to exclude from scanning
-        default: ''
-
     secrets:
 
       flagsmith_admin_api_key:
@@ -58,7 +53,6 @@ jobs:
         uses: Flagsmith/ci/.github/actions/scan-code-references@feat/github-code-references-reusable-workflow
         with:
           feature_names: ${{ needs.fetch-feature-names.outputs.feature_names }}
-          exclude_patterns: ${{ inputs.exclude_patterns }}
 
   upload-code-references:
     name: "Flagsmith: Upload code references"

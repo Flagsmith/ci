@@ -30,7 +30,10 @@ def upload_code_references(
             "code_references": code_references,
         },
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise SystemExit(
+            f"Failed to upload code references: {response.status_code} {response.text}",
+        )
     return len(code_references)
 
 

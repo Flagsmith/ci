@@ -6,10 +6,6 @@ inputs:
   feature_names:
     description: JSON array of feature names to search for
     required: true
-  exclude_patterns:
-    description: Comma-separated list of patterns to exclude from scanning
-    required: false
-    default: .git,node_modules,vendor,venv,.venv,__pycache__,.tox,.mypy_cache,.pytest_cache,.ruff_cache,dist,build,target,out,bin,obj,.next,.nuxt,.cache,coverage,htmlcov,.nyc_output
 
 outputs:
   code_references:
@@ -30,7 +26,6 @@ runs:
       shell: bash
       env:
         FEATURE_NAMES: ${{ inputs.feature_names }}
-        EXCLUDE_PATTERNS: ${{ inputs.exclude_patterns }}
-        SCAN_PATH: ${{ github.workspace }}
+        GIT_REPOSITORY_PATH: ${{ github.workspace }}
       working-directory: ${{ github.action_path }}/../../..
       run: uv run scan-code-references

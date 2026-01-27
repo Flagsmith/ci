@@ -2,7 +2,6 @@ from unittest.mock import Mock
 
 import pytest
 from pytest_mock import MockerFixture
-from requests import HTTPError
 
 from code_references.cli.upload_code_references import main, upload_code_references
 from code_references.types import CodeReferenceSubmit
@@ -33,7 +32,7 @@ def test_upload_code_references__posts_references_to_api(
     mocker: MockerFixture,
 ) -> None:
     # Given
-    mock_response = Mock()
+    mock_response = Mock(ok=True)
     mock_post = mocker.patch(
         "code_references.cli.upload_code_references.requests.post",
         return_value=mock_response,
@@ -65,10 +64,14 @@ def test_upload_code_references__posts_references_to_api(
     )
 
 
-def test_upload_code_references__api_error__raises(mocker: MockerFixture) -> None:
+def test_upload_code_references__api_error__raises_with_details(
+    mocker: MockerFixture,
+) -> None:
     # Given
     mock_response = Mock()
-    mock_response.raise_for_status.side_effect = HTTPError("401")
+    mock_response.ok = False
+    mock_response.status_code = 401
+    mock_response.text = '{"detail": "Invalid API key"}'
     mocker.patch(
         "code_references.cli.upload_code_references.requests.post",
         return_value=mock_response,
@@ -79,7 +82,7 @@ def test_upload_code_references__api_error__raises(mocker: MockerFixture) -> Non
     ]
 
     # When / Then
-    with pytest.raises(HTTPError):
+    with pytest.raises(SystemExit) as exc_info:
         upload_code_references(
             references,
             api_url="https://api.flagsmith.com",
@@ -88,6 +91,8 @@ def test_upload_code_references__api_error__raises(mocker: MockerFixture) -> Non
             repository_url="https://github.com/acme/repo",
             revision="abc123",
         )
+    assert "401" in str(exc_info.value)
+    assert "Invalid API key" in str(exc_info.value)
 
 
 def test_main__with_references__uploads_and_prints(
@@ -104,7 +109,7 @@ def test_main__with_references__uploads_and_prints(
     monkeypatch.setenv("REPOSITORY_URL", "https://github.com/acme/repo")
     monkeypatch.setenv("REVISION", "abc123")
 
-    mock_response = Mock()
+    mock_response = Mock(ok=True)
     mocker.patch(
         "code_references.cli.upload_code_references.requests.post",
         return_value=mock_response,

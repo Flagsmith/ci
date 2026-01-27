@@ -2,8 +2,10 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
+from pytest_mock import MockerFixture
 
 from code_references.cli.scan_code_references import (
+    list_repository_files,
     main,
     scan_code_references,
     should_skip_file,
@@ -46,6 +48,20 @@ def test_should_skip_file__text_file__returns_false(tmp_path: Path) -> None:
     assert result is False
 
 
+def test_list_repository_files__returns_tracked_files(
+    tmp_path: Path,
+    mocker: MockerFixture,
+) -> None:
+    # Given
+    mocker.patch("subprocess.run").return_value.stdout = "app.py\nlib/utils.py"
+
+    # When
+    result = list_repository_files(tmp_path)
+
+    # Then
+    assert result == [tmp_path / "app.py", tmp_path / "lib/utils.py"]
+
+
 @pytest.mark.parametrize(
     "source_code",
     [
@@ -58,15 +74,15 @@ def test_should_skip_file__text_file__returns_false(tmp_path: Path) -> None:
 )
 def test_scan_code_references__flag_referenced__yields_code_reference(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
     source_code: str,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text(source_code)
+    mocker.patch("subprocess.run").return_value.stdout = "app.py"
 
     # When
-    results = list(scan_code_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"], tmp_path))
 
     # Then
     assert results == [
@@ -76,10 +92,9 @@ def test_scan_code_references__flag_referenced__yields_code_reference(
 
 def test_scan_code_references__multiline_reference__yields_code_reference(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text(
         dedent("""\
         get_feature(
@@ -87,9 +102,10 @@ def test_scan_code_references__multiline_reference__yields_code_reference(
         )
     """),
     )
+    mocker.patch("subprocess.run").return_value.stdout = "app.py"
 
     # When
-    results = list(scan_code_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"], tmp_path))
 
     # Then
     assert results == [
@@ -107,47 +123,48 @@ def test_scan_code_references__multiline_reference__yields_code_reference(
 )
 def test_scan_code_references__flag_not_referenced__yields_nothing(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
     source_code: str,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text(source_code)
+    mocker.patch("subprocess.run").return_value.stdout = "app.py"
 
     # When
-    results = list(scan_code_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"], tmp_path))
 
     # Then
     assert results == []
 
 
-def test_scan_code_references__excluded_path__skips_file(
+def test_scan_code_references__untracked_file__skips_file(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "venv").mkdir()
-    (tmp_path / "venv" / "app.py").write_text('get_feature("my_flag")')
+    (tmp_path / "tracked.py").write_text('get_feature("my_flag")')
+    (tmp_path / "untracked.py").write_text('get_feature("my_flag")')
+    mocker.patch("subprocess.run").return_value.stdout = "tracked.py"
 
     # When
-    results = list(scan_code_references(["my_flag"], exclude_patterns=["venv"]))
+    results = list(scan_code_references(["my_flag"], tmp_path))
 
     # Then
-    assert results == []
+    assert results == [
+        {"feature_name": "my_flag", "file_path": "tracked.py", "line_number": 1},
+    ]
 
 
-def test_scan_code_references__directory__skips(
+def test_scan_code_references__nonexistent_file__skips_file(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
-    (tmp_path / "subdir").mkdir()
     (tmp_path / "app.py").write_text('get_feature("my_flag")')
+    mocker.patch("subprocess.run").return_value.stdout = "app.py\ndeleted.py"
 
     # When
-    results = list(scan_code_references(["my_flag"]))
+    results = list(scan_code_references(["my_flag"], tmp_path))
 
     # Then
     assert results == [
@@ -155,24 +172,17 @@ def test_scan_code_references__directory__skips(
     ]
 
 
-@pytest.mark.parametrize(
-    "exclude_patterns",
-    [
-        pytest.param([], id="empty_list"),
-        pytest.param([""], id="list_with_empty_string"),
-    ],
-)
-def test_scan_code_references__empty_exclude_patterns__finds_references(
+def test_scan_code_references__binary_file__skips_file(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    exclude_patterns: list[str],
+    mocker: MockerFixture,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text('get_feature("my_flag")')
+    (tmp_path / "binary.bin").write_bytes(b"\x00\x01\x02")
+    mocker.patch("subprocess.run").return_value.stdout = "app.py\nbinary.bin"
 
     # When
-    results = list(scan_code_references(["my_flag"], exclude_patterns=exclude_patterns))
+    results = list(scan_code_references(["my_flag"], tmp_path))
 
     # Then
     assert results == [
@@ -182,19 +192,19 @@ def test_scan_code_references__empty_exclude_patterns__finds_references(
 
 def test_scan_code_references__multiple_flags__yields_all(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text(
         dedent("""\
         get_feature("flag_a")
         is_flag_enabled("flag_b")
     """),
     )
+    mocker.patch("subprocess.run").return_value.stdout = "app.py"
 
     # When
-    results = list(scan_code_references(["flag_a", "flag_b"]))
+    results = list(scan_code_references(["flag_a", "flag_b"], tmp_path))
 
     # Then
     assert sorted(results, key=lambda r: r["line_number"]) == [
@@ -203,37 +213,25 @@ def test_scan_code_references__multiple_flags__yields_all(
     ]
 
 
-def test_scan_code_references__with_scan_path__scans_specified_directory(
-    tmp_path: Path,
-) -> None:
-    # Given
-    scan_dir = tmp_path / "target"
-    scan_dir.mkdir()
-    (scan_dir / "app.py").write_text('get_feature("my_flag")')
-
-    # When
-    results = list(scan_code_references(["my_flag"], scan_path=scan_dir))
-
-    # Then
-    assert len(results) == 1
-    assert results[0]["feature_name"] == "my_flag"
-    assert results[0]["line_number"] == 1
-
-
 def test_main__with_references__prints_and_outputs(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text('get_feature("my_flag")')
     github_output = tmp_path / "github_output"
     github_output.touch()
 
-    monkeypatch.setenv("FEATURE_NAMES", '["my_flag"]')
-    monkeypatch.setenv("EXCLUDE_PATTERNS", "")
-    monkeypatch.setenv("GITHUB_OUTPUT", str(github_output))
+    mocker.patch("subprocess.run").return_value.stdout = "app.py"
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "FEATURE_NAMES": '["my_flag"]',
+            "GIT_REPOSITORY_PATH": str(tmp_path),
+            "GITHUB_OUTPUT": str(github_output),
+        },
+    )
 
     # When
     main()
@@ -247,16 +245,21 @@ def test_main__with_references__prints_and_outputs(
 
 def test_main__no_references__prints_message(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     # Given
-    monkeypatch.chdir(tmp_path)
     (tmp_path / "app.py").write_text("# no flags here")
 
-    monkeypatch.setenv("FEATURE_NAMES", '["my_flag"]')
-    monkeypatch.setenv("EXCLUDE_PATTERNS", "")
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    mocker.patch("subprocess.run").return_value.stdout = "app.py"
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "FEATURE_NAMES": '["my_flag"]',
+            "GIT_REPOSITORY_PATH": str(tmp_path),
+        },
+        clear=True,
+    )
 
     # When
     main()
@@ -266,24 +269,19 @@ def test_main__no_references__prints_message(
     assert "No code references found." in captured.out
 
 
-def test_main__with_scan_path__scans_specified_directory(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
+def test_main__invalid_repository_path__raises_system_exit(
+    mocker: MockerFixture,
 ) -> None:
     # Given
-    scan_dir = tmp_path / "target"
-    scan_dir.mkdir()
-    (scan_dir / "app.py").write_text('get_feature("my_flag")')
+    mocker.patch.dict(
+        "os.environ",
+        {
+            "FEATURE_NAMES": '["my_flag"]',
+            "GIT_REPOSITORY_PATH": "/nonexistent/path",
+        },
+    )
 
-    monkeypatch.setenv("FEATURE_NAMES", '["my_flag"]')
-    monkeypatch.setenv("EXCLUDE_PATTERNS", "")
-    monkeypatch.setenv("SCAN_PATH", str(scan_dir))
-    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-
-    # When
-    main()
-
-    # Then
-    captured = capsys.readouterr()
-    assert "Feature: my_flag" in captured.out
+    # When / Then
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+    assert "not a directory" in str(exc_info.value)
