@@ -35,6 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read  # Required for actions/checkout
+      id-token: write  # For OIDC authentication, e.g. Codecov
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -56,4 +57,4 @@ jobs:
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
