@@ -4,6 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 from requests import HTTPError
 
+from code_references.types import CodeReferenceSubmit
 from code_references.upload import main, upload_code_references
 
 
@@ -37,7 +38,7 @@ def test_upload_code_references__posts_references_to_api(
         "code_references.upload.requests.post",
         return_value=mock_response,
     )
-    references = [
+    references: list[CodeReferenceSubmit] = [
         {"feature_name": "flag_a", "file_path": "app.py", "line_number": 10},
     ]
 
@@ -73,10 +74,14 @@ def test_upload_code_references__api_error__raises(mocker: MockerFixture) -> Non
         return_value=mock_response,
     )
 
+    references: list[CodeReferenceSubmit] = [
+        {"feature_name": "f", "file_path": "a.py", "line_number": 1},
+    ]
+
     # When / Then
     with pytest.raises(HTTPError):
         upload_code_references(
-            [{"feature_name": "f", "file_path": "a.py", "line_number": 1}],
+            references,
             api_url="https://api.flagsmith.com",
             api_key="bad_key",
             project_id="123",

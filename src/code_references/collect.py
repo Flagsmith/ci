@@ -5,17 +5,11 @@ import os
 import re
 from collections import defaultdict, deque
 from collections.abc import Generator
-from dataclasses import asdict, dataclass
 from pathlib import Path
 
+from code_references.types import CodeReferenceSubmit
+
 type FeatureName = str
-
-
-@dataclass(frozen=True, slots=True)
-class CodeReference:
-    feature_name: FeatureName
-    file_path: str
-    line_number: int
 
 
 def should_skip_file(file_path: Path) -> bool:
@@ -40,7 +34,7 @@ def find_references(
     feature_names: list[FeatureName],
     exclude_patterns: list[str] | None = None,
     scan_path: Path | None = None,
-) -> Generator[CodeReference]:
+) -> Generator[CodeReferenceSubmit]:
     """Search for references to a feature name in the codebase."""
     exclude_patterns = [p for p in (exclude_patterns or []) if p]
     base_path = scan_path or Path(".")
@@ -64,11 +58,11 @@ def find_references(
                     })\1"""
                     if re.search(pattern, "".join(context)):
                         relative_path = path.relative_to(base_path)
-                        yield CodeReference(
-                            feature_name,
-                            str(relative_path),
-                            line_number,
-                        )
+                        yield {
+                            "feature_name": feature_name,
+                            "file_path": str(relative_path),
+                            "line_number": line_number,
+                        }
 
 
 def main() -> None:
@@ -82,7 +76,7 @@ def main() -> None:
 
     code_references = list(find_references(feature_names, exclude_patterns, scan_path))
 
-    json_references = json.dumps([asdict(ref) for ref in code_references])
+    json_references = json.dumps(code_references)
     github_output = os.environ.get("GITHUB_OUTPUT")
     if github_output:
         with open(github_output, "a") as gh_output:
@@ -92,21 +86,23 @@ def main() -> None:
         print("No code references found.")
         return
 
-    references_by_feature: defaultdict[FeatureName, list[CodeReference]] = defaultdict(
-        list,
+    references_by_feature: defaultdict[FeatureName, list[CodeReferenceSubmit]] = (
+        defaultdict(
+            list,
+        )
     )
     sorted_code_references = sorted(
         code_references,
-        key=lambda ref: (ref.feature_name, ref.file_path, ref.line_number),
+        key=lambda ref: (ref["feature_name"], ref["file_path"], ref["line_number"]),
     )
     for ref in sorted_code_references:
-        references_by_feature[ref.feature_name].append(ref)
+        references_by_feature[ref["feature_name"]].append(ref)
 
     print("Code References:")
     for feature_name, references in references_by_feature.items():
         print(f"\nFeature: {feature_name}")
         for ref in references:
-            print(f"  - {ref.file_path}:{ref.line_number}")
+            print(f"  - {ref['file_path']}:{ref['line_number']}")
 
 
 if __name__ == "__main__":

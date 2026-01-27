@@ -4,7 +4,9 @@ author: Flagsmith
 
 inputs:
   code_references:
-    description: JSON array of code references to upload
+    description: |
+      JSON array of code references to upload.
+      See https://api.flagsmith.com/api/v1/docs/#/api/api_v1_projects_code_references_create for the schema.
     required: true
   flagsmith_project_id:
     description: Flagsmith project ID

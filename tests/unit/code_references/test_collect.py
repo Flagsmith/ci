@@ -4,7 +4,6 @@ from textwrap import dedent
 import pytest
 
 from code_references.collect import (
-    CodeReference,
     find_references,
     main,
     should_skip_file,
@@ -71,7 +70,7 @@ def test_find_references__flag_referenced__yields_code_reference(
 
     # Then
     assert results == [
-        CodeReference(feature_name="my_flag", file_path="app.py", line_number=1),
+        {"feature_name": "my_flag", "file_path": "app.py", "line_number": 1},
     ]
 
 
@@ -94,7 +93,7 @@ def test_find_references__multiline_reference__yields_code_reference(
 
     # Then
     assert results == [
-        CodeReference(feature_name="my_flag", file_path="app.py", line_number=2),
+        {"feature_name": "my_flag", "file_path": "app.py", "line_number": 2},
     ]
 
 
@@ -152,7 +151,7 @@ def test_find_references__directory__skips(
 
     # Then
     assert results == [
-        CodeReference(feature_name="my_flag", file_path="app.py", line_number=1),
+        {"feature_name": "my_flag", "file_path": "app.py", "line_number": 1},
     ]
 
 
@@ -177,7 +176,7 @@ def test_find_references__empty_exclude_patterns__finds_references(
 
     # Then
     assert results == [
-        CodeReference(feature_name="my_flag", file_path="app.py", line_number=1),
+        {"feature_name": "my_flag", "file_path": "app.py", "line_number": 1},
     ]
 
 
@@ -195,13 +194,13 @@ def test_find_references__multiple_flags__yields_all(
     )
 
     # When
-    results = set(find_references(["flag_a", "flag_b"]))
+    results = list(find_references(["flag_a", "flag_b"]))
 
     # Then
-    assert results == {
-        CodeReference(feature_name="flag_a", file_path="app.py", line_number=1),
-        CodeReference(feature_name="flag_b", file_path="app.py", line_number=2),
-    }
+    assert sorted(results, key=lambda r: r["line_number"]) == [
+        {"feature_name": "flag_a", "file_path": "app.py", "line_number": 1},
+        {"feature_name": "flag_b", "file_path": "app.py", "line_number": 2},
+    ]
 
 
 def test_find_references__with_scan_path__scans_specified_directory(
@@ -217,8 +216,8 @@ def test_find_references__with_scan_path__scans_specified_directory(
 
     # Then
     assert len(results) == 1
-    assert results[0].feature_name == "my_flag"
-    assert results[0].line_number == 1
+    assert results[0]["feature_name"] == "my_flag"
+    assert results[0]["line_number"] == 1
 
 
 def test_main__with_references__prints_and_outputs(

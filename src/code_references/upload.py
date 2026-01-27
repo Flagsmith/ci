@@ -2,13 +2,14 @@
 
 import json
 import os
-from typing import Any
 
 import requests
 
+from code_references.types import CodeReferenceSubmit
+
 
 def upload_code_references(
-    code_references: list[dict[str, Any]],
+    code_references: list[CodeReferenceSubmit],
     *,
     api_url: str,
     api_key: str,
