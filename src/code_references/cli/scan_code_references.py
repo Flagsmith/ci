@@ -1,6 +1,7 @@
 """Scan code references for Flagsmith feature flags."""
 
 import json
+import logging
 import os
 import re
 import subprocess
@@ -12,9 +13,13 @@ from code_references.types import CodeReferenceSubmit
 
 type FeatureName = str
 
+logger = logging.getLogger(__name__)
+
 
 def should_skip_file(file_path: Path) -> bool:
-    """Whether to skip a file based on its size or content."""
+    """Whether to skip a file likely irrelevant to feature reference scanning."""
+    if not file_path.is_file():
+        return True
     file_size = file_path.stat().st_size
     if file_size == 0:  # Empty files are irrelevant
         return True
@@ -50,12 +55,12 @@ def scan_code_references(
     """Search for references to a feature name in the codebase."""
     all_files = list_repository_files(repository_path)
     for path in all_files:
-        if not path.is_file():
-            continue
         if should_skip_file(path):
+            logger.info(f"{path}: skipped")
             continue
         context: deque[str] = deque(maxlen=2)
         with path.open("r", encoding="utf-8", errors="ignore") as file:
+            references_count = 0
             for line_number, line in enumerate(file, start=1):
                 context.append(line)
                 for feature_name in feature_names:
@@ -65,12 +70,13 @@ def scan_code_references(
                         re.escape(feature_name)
                     })\1"""
                     if re.search(pattern, "".join(context)):
-                        relative_path = path.relative_to(repository_path)
+                        references_count += 1
                         yield {
                             "feature_name": feature_name,
-                            "file_path": str(relative_path),
+                            "file_path": str(path.relative_to(repository_path)),
                             "line_number": line_number,
                         }
+            logger.info(f"{path}: {references_count} references found")
 
 
 def main() -> None:
