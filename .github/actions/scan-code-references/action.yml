@@ -1,0 +1,31 @@
+name: Scan code references
+description: Scan codebase for Flagsmith feature flag references
+author: Flagsmith
+
+inputs:
+  feature_names:
+    description: JSON array of feature names to search for
+    required: true
+
+outputs:
+  code_references:
+    description: JSON array of code references found
+    value: ${{ steps.scan.outputs.code_references }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: '3.14'
+        enable-cache: true
+
+    - name: Scan code references
+      id: scan
+      shell: bash
+      env:
+        FEATURE_NAMES: ${{ inputs.feature_names }}
+        GIT_REPOSITORY_PATH: ${{ github.workspace }}
+      working-directory: ${{ github.action_path }}/../../..
+      run: uv run scan-code-references

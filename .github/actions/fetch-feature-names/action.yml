@@ -1,0 +1,39 @@
+name: Fetch feature names
+description: Fetch feature names from Flagsmith API
+author: Flagsmith
+
+inputs:
+  flagsmith_project_id:
+    description: Flagsmith project ID
+    required: true
+  flagsmith_admin_api_url:
+    description: Flagsmith admin API URL
+    required: false
+    default: https://api.flagsmith.com
+  flagsmith_admin_api_key:
+    description: Flagsmith admin API key
+    required: true
+
+outputs:
+  feature_names:
+    description: JSON array of feature names
+    value: ${{ steps.fetch.outputs.feature_names }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: astral-sh/setup-uv@v7
+      with:
+        python-version: '3.14'
+        enable-cache: true
+
+    - name: Fetch feature names
+      id: fetch
+      shell: bash
+      env:
+        FLAGSMITH_PROJECT_ID: ${{ inputs.flagsmith_project_id }}
+        FLAGSMITH_ADMIN_API_URL: ${{ inputs.flagsmith_admin_api_url }}
+        FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
+      working-directory: ${{ github.action_path }}/../../..
+      run: uv run fetch-feature-names

@@ -1,0 +1,9 @@
+inverseOperationIds:
+  - api_v1_projects_code_references_create
+unusedComponents:
+  - schemas
+  - parameters
+  - examples
+  - headers
+  - requestBodies
+  - responses

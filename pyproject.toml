@@ -1,0 +1,60 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flagsmith-ci"
+version = "0.0.0"
+description = "Continuous Integration tooling to integrate with Flagsmith."
+requires-python = ">=3.14"
+dependencies = [
+    "requests~=2.32.5",  # HTTP client for Flagsmith API calls
+]
+
+[project.scripts]
+fetch-feature-names = "code_references.cli.fetch_features:main"
+scan-code-references = "code_references.cli.scan_code_references:main"
+upload-code-references = "code_references.cli.upload_code_references:main"
+
+[dependency-groups]
+dev = [
+    "pre-commit~=4.5.1",  # Git hooks for code quality checks
+    "pytest~=9.0.2",  # Test framework
+    "pytest-cov~=6.0.0",  # Test coverage plugin for pytest
+    "pytest-mock~=3.15.1",  # Mocking utilities for pytest
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/code_references"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "SIM",    # flake8-simplify
+    "COM",    # flake8-commas (trailing commas)
+    "RUF",    # Ruff-specific rules
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+exclude_also = [
+    'if TYPE_CHECKING:',
+    'if typing.TYPE_CHECKING:',
+    '@(abc\.)?abstractmethod',
+    'if __name__ == "__main__":',
+]
