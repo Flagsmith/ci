@@ -1,4 +1,4 @@
-Continuous Integration tooling to integrate with multiple Flagsmith features.
+Continuous Integration tooling to integrate with Flagsmith.
 
 ## Code References
 
