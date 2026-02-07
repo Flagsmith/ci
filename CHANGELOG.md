@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/Flagsmith/ci/compare/v1.0.0...v1.0.1) (2026-02-07)
+
+
+### Other
+
+* Remove amannn/action-semantic-pull-request job from PR workflow ([#7](https://github.com/Flagsmith/ci/issues/7)) ([a6af20b](https://github.com/Flagsmith/ci/commit/a6af20b4038e1b0b5861d53278953c8bc5efeb91))
+
 ## 1.0.0 (2026-01-30)
 
 
