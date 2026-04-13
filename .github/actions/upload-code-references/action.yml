@@ -24,6 +24,10 @@ inputs:
   revision:
     description: Git revision (commit SHA) being scanned
     required: true
+  vcs_provider:
+    description: The VCS provider hosting the repository (e.g., github, gitlab)
+    required: false
+    default: github
 
 runs:
   using: composite
@@ -43,5 +47,6 @@ runs:
         FLAGSMITH_ADMIN_API_KEY: ${{ inputs.flagsmith_admin_api_key }}
         REPOSITORY_URL: ${{ inputs.repository_url }}
         REVISION: ${{ inputs.revision }}
+        VCS_PROVIDER: ${{ inputs.vcs_provider }}
       working-directory: ${{ github.action_path }}/../../..
       run: uv run upload-code-references

@@ -16,6 +16,7 @@ def upload_code_references(
     project_id: str,
     repository_url: str,
     revision: str,
+    vcs_provider: str = "github",
 ) -> int:
     """Upload code references to Flagsmith API. Returns count of uploaded references."""
     if not code_references:
@@ -28,6 +29,7 @@ def upload_code_references(
             "repository_url": repository_url,
             "revision": revision,
             "code_references": code_references,
+            "vcs_provider": vcs_provider,
         },
     )
     if not response.ok:
@@ -47,6 +49,7 @@ def main() -> None:
         project_id=os.environ["FLAGSMITH_PROJECT_ID"],
         repository_url=os.environ["REPOSITORY_URL"],
         revision=os.environ["REVISION"],
+        vcs_provider=os.environ.get("VCS_PROVIDER", "github"),
     )
     if count:
         print(f"Uploaded {count} code references.")

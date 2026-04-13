@@ -16,3 +16,4 @@ class FeatureFlagCodeReferencesScan(TypedDict):
     project: NotRequired[int]
     revision: str
     code_references: list[CodeReferenceSubmit]
+    vcs_provider: NotRequired[str]
