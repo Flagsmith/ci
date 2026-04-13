@@ -49,6 +49,7 @@ def test_upload_code_references__posts_references_to_api(
         project_id="123",
         repository_url="https://github.com/acme/repo",
         revision="abc123",
+        vcs_provider="gitlab",
     )
 
     # Then
@@ -60,6 +61,7 @@ def test_upload_code_references__posts_references_to_api(
             "repository_url": "https://github.com/acme/repo",
             "revision": "abc123",
             "code_references": references,
+            "vcs_provider": "gitlab",
         },
     )
 
@@ -110,7 +112,7 @@ def test_main__with_references__uploads_and_prints(
     monkeypatch.setenv("REVISION", "abc123")
 
     mock_response = Mock(ok=True)
-    mocker.patch(
+    mock_post = mocker.patch(
         "code_references.cli.upload_code_references.requests.post",
         return_value=mock_response,
     )
@@ -121,6 +123,41 @@ def test_main__with_references__uploads_and_prints(
     # Then
     captured = capsys.readouterr()
     assert "Uploaded 1 code references." in captured.out
+
+    called_args, called_kwargs = mock_post.call_args
+    assert called_kwargs["json"]["vcs_provider"] == "github"
+
+def test_main__with_explicit_vcs_provider__passes_provider_to_upload(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Given
+    references = '[{"feature_name": "flag_a", "file_path": "app.py", "line_number": 1}]'
+    monkeypatch.setenv("CODE_REFERENCES", references)
+    monkeypatch.setenv("FLAGSMITH_ADMIN_API_URL", "https://api.flagsmith.com")
+    monkeypatch.setenv("FLAGSMITH_ADMIN_API_KEY", "ser.test_key")
+    monkeypatch.setenv("FLAGSMITH_PROJECT_ID", "123")
+    monkeypatch.setenv("REPOSITORY_URL", "https://gitlab.com/acme/repo")
+    monkeypatch.setenv("REVISION", "abc123")
+    monkeypatch.setenv("VCS_PROVIDER", "gitlab") # <-- Explicitly set env var
+
+    mock_response = Mock(ok=True)
+    mock_post = mocker.patch(
+        "code_references.cli.upload_code_references.requests.post",
+        return_value=mock_response,
+    )
+
+    # When
+    main()
+
+    # Then
+    captured = capsys.readouterr()
+    assert "Uploaded 1 code references." in captured.out
+    
+    # Assert main picked up the env var correctly
+    called_args, called_kwargs = mock_post.call_args
+    assert called_kwargs["json"]["vcs_provider"] == "gitlab"
 
 
 def test_main__no_references__prints_message(

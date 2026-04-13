@@ -14,6 +14,12 @@ on:
         type: string
         description: Flagsmith admin API URL
         default: https://api.flagsmith.com
+      
+      vcs_provider:
+        type: string
+        description: The VCS provider hosting the repository (e.g., github, gitlab)
+        default: github
+        required: false
 
     secrets:
 
@@ -68,3 +74,4 @@ jobs:
           flagsmith_admin_api_key: ${{ secrets.flagsmith_admin_api_key }}
           repository_url: ${{ github.server_url }}/${{ github.repository }}
           revision: ${{ github.sha }}
+          vcs_provider: ${{ inputs.vcs_provider }}

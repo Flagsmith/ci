@@ -1,0 +1,28 @@
+spec:
+  inputs:
+    flagsmith_project_id:
+      type: string
+      description: "The ID of your Flagsmith project"
+    flagsmith_admin_api_url:
+      type: string
+      default: "https://api.flagsmith.com/api/v1/"
+      description: "The base URL for the Flagsmith API"
+
+---
+
+flagsmith-code-references:
+  stage: .post
+  image: ghcr.io/astral-sh/uv:python3.14-alpine
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  variables:
+    REPOSITORY_URL: $CI_PROJECT_URL
+    REVISION: $CI_COMMIT_SHA
+    VCS_PROVIDER: "gitlab"
+    FLAGSMITH_PROJECT_ID: $[[ inputs.flagsmith_project_id ]]
+    FLAGSMITH_ADMIN_API_URL: $[[ inputs.flagsmith_admin_api_url ]]
+    # FLAGSMITH_CODE_REFERENCES_API_KEY must be provided via GitLab CI/CD variables
+  script:
+    - uv run --from git+https://github.com/Flagsmith/ci.git@v1.0.0 fetch_code_references
+    - uv run --from git+https://github.com/Flagsmith/ci.git@v1.0.0 scan_code_references
+    - uv run --from git+https://github.com/Flagsmith/ci.git@v1.0.0 upload_code_references
